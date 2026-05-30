@@ -9,6 +9,7 @@ import subprocess
 import threading
 import os
 import signal
+import sys
 import time
 from datetime import datetime
 
@@ -36,7 +37,14 @@ FONT_COUNTER  = ("Segoe UI", 24, "bold")
 BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
 DECOY_PY  = os.path.join(BASE_DIR, "decoy.py")
 SENT_PY   = os.path.join(BASE_DIR, "sentinel.py")
-LOG_FILE  = os.path.join(BASE_DIR, "stolen_logs.txt")
+
+try:
+    from config import LOG_FILE
+except ImportError:
+    LOG_FILE = os.path.join(BASE_DIR, "stolen_logs.txt")
+
+_PYTHON = sys.executable if sys.executable else "python3"
+_UNBUF_ENV = {**os.environ, "PYTHONUNBUFFERED": "1"}
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -70,10 +78,7 @@ class LiveTerminal(ctk.CTkFrame):
 
     def _append(self, text, color=None):
         self.txt.configure(state="normal")
-        if color:
-            self.txt.insert("end", text)
-        else:
-            self.txt.insert("end", text)
+        self.txt.insert("end", text)
         self.txt.see("end")
         self.txt.configure(state="disabled")
 
@@ -324,9 +329,9 @@ class NeuroDecoyApp(ctk.CTk):
             return
         try:
             self.decoy_proc = subprocess.Popen(
-                ["python3", DECOY_PY],
+                [_PYTHON, DECOY_PY],
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                text=True, bufsize=1, cwd=BASE_DIR)
+                text=True, bufsize=1, cwd=BASE_DIR, env=_UNBUF_ENV)
             self.decoy_on = True
             self.term.write("DECOY", "Engine engaged — injecting decoys on idle ...", CYAN)
             threading.Thread(target=self._pipe_decoy, daemon=True).start()
@@ -369,9 +374,9 @@ class NeuroDecoyApp(ctk.CTk):
             return
         try:
             self.sent_proc = subprocess.Popen(
-                ["python3", SENT_PY],
+                [_PYTHON, SENT_PY],
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                text=True, bufsize=1, cwd=BASE_DIR)
+                text=True, bufsize=1, cwd=BASE_DIR, env=_UNBUF_ENV)
             self.sent_on = True
             self.term.write("SENTINEL", "Oversight engaged — monitoring log file ...", CYAN)
             threading.Thread(target=self._pipe_sent, daemon=True).start()

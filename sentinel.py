@@ -1,10 +1,22 @@
 import time
 import os
-import sys
+import signal
 
-LOG_FILE = "stolen_logs.txt"
-THRESHOLD_KB = 10
-POLL_INTERVAL = 0.5
+try:
+    from config import LOG_FILE, SENTINEL_THRESHOLD_KB, SENTINEL_POLL_INTERVAL
+except ImportError:
+    BASE = os.path.dirname(os.path.abspath(__file__))
+    LOG_FILE = os.path.join(BASE, "stolen_logs.txt")
+    SENTINEL_THRESHOLD_KB = 10
+    SENTINEL_POLL_INTERVAL = 1.0
+
+RUNNING = True
+
+
+def handler(signum, frame):
+    global RUNNING
+    RUNNING = False
+    print("[*] Sentinel shutting down gracefully.", flush=True)
 
 
 def get_file_size_kb(path):
@@ -16,24 +28,36 @@ def get_file_size_kb(path):
 
 def wipe_log(path):
     try:
-        with open(path, "w") as f:
-            f.truncate(0)
-        print(f"[!] Sentinel: Wiped {path} — threat log eliminated.")
+        open(path, "w").close()
+        print(f"[!] Sentinel: Wiped {path} — threat log eliminated.", flush=True)
+        return True
     except Exception as e:
-        print(f"[-] Sentinel: Wipe failed — {e}")
+        print(f"[-] Sentinel: Wipe failed — {e}", flush=True)
+        return False
 
 
 def monitor():
-    print("[*] Storage Sentinel Activated.")
-    print(f"[*] Monitoring '{LOG_FILE}' — threshold: {THRESHOLD_KB}KB\n")
-    while True:
+    signal.signal(signal.SIGTERM, handler)
+    signal.signal(signal.SIGINT, handler)
+
+    print("[*] Storage Sentinel Activated.", flush=True)
+    print(f"[*] Monitoring '{LOG_FILE}' — threshold: {SENTINEL_THRESHOLD_KB}KB\n", flush=True)
+
+    last_size = -1.0
+
+    while RUNNING:
         size_kb = get_file_size_kb(LOG_FILE)
-        if size_kb >= THRESHOLD_KB:
-            print(f"[!] Sentinel: {LOG_FILE} reached {size_kb:.1f}KB (threshold: {THRESHOLD_KB}KB)")
-            wipe_log(LOG_FILE)
-        else:
-            print(f"[*] Sentinel: {LOG_FILE} — {size_kb:.1f}KB / {THRESHOLD_KB}KB")
-        time.sleep(POLL_INTERVAL)
+
+        if size_kb != last_size or size_kb >= SENTINEL_THRESHOLD_KB:
+            if size_kb >= SENTINEL_THRESHOLD_KB:
+                print(f"[!] Sentinel: {LOG_FILE} reached {size_kb:.1f}KB (threshold: {SENTINEL_THRESHOLD_KB}KB)", flush=True)
+                wipe_log(LOG_FILE)
+                last_size = 0.0
+            else:
+                print(f"[*] Sentinel: {os.path.basename(LOG_FILE)} — {size_kb:.1f}KB / {SENTINEL_THRESHOLD_KB}KB", flush=True)
+                last_size = size_kb
+
+        time.sleep(SENTINEL_POLL_INTERVAL)
 
 
 if __name__ == "__main__":

