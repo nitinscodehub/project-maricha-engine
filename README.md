@@ -27,7 +27,7 @@ source venv/bin/activate
 pip install pynput customtkinter
 
 # 3. Run
-python maricha_ui.py
+python neuro_decoy_ui.py
 ```
 
 Ya ek command mein:
