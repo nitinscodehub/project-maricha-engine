@@ -51,7 +51,8 @@ GUI open hoga:
 2. **Storage Sentinel** toggle ON karein → auto-wipe monitoring start  
 3. **Live Terminal** mein saara output real-time dikhega
 
-![GUI Layout](https://via.placeholder.com/600x300/0B0E14/00E5FF?text=Project+Maricha+UI+Preview)
+<img width="946" height="722" alt="image" src="https://github.com/user-attachments/assets/8f8abea6-9347-4f96-86c5-79372aa8d1bc" />
+
 
 ### Option 2: CLI Mode (Headless)
 
